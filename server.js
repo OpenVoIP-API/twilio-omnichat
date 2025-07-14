@@ -12,14 +12,14 @@ const {
     PORT = 3000,
     TWILIO_AUTH_TOKEN,
 
-    OMNI_USERNAME,
-    OMNI_PASSWORD,
-    OMNI_APP_NAME,
-    OMNI_API_ACCOUNT_ID,
-    OMNI_TEMPLATE_ID
+    Wx_USERNAME,
+    Wx_PASSWORD,
+    Wx_APP_NAME,
+    Wx_API_ACCOUNT_ID,
+    Wx_TEMPLATE_ID
 } = process.env;
 
-const OMNI_BASE = 'https://api.omnichat.co.uk';
+const Wx_BASE = 'https://api.whatex.app';
 
 
 let token = '';
@@ -29,9 +29,9 @@ async function getBearer() {
     if (token && Date.now() < tokenExpiry - 60_000) return token; // still valid
 
     const { data } = await axios.post(
-        `${OMNI_BASE}/oauth/token`,
-        { username: OMNI_USERNAME, password: OMNI_PASSWORD },
-        { headers: { 'X-Calling-Application': OMNI_APP_NAME } }
+        `${Wx_BASE}/oauth/token`,
+        { username: Wx_USERNAME, password: Wx_PASSWORD },
+        { headers: { 'X-Calling-Application': Wx_APP_NAME } }
     ); // returns { access_token, expires_at } :contentReference[oaicite:0]{index=0}
 
     token = data.access_token;
@@ -45,7 +45,7 @@ async function findOrCreateContact(msisdn) {
     /* 1 – lookup */
     try {
         console.log(msisdn)
-        const look = await axios.get(`${OMNI_BASE}/contact?apiAccountId=${OMNI_API_ACCOUNT_ID}&mobileNumber=${msisdn}`, {
+        const look = await axios.get(`${Wx_BASE}/contact?apiAccountId=${Wx_API_ACCOUNT_ID}&mobileNumber=${msisdn}`, {
             headers: { Authorization: `Bearer ${bearer}` }
         });
         if (look.data.items?.length) return look.data.items[0].contactId;
@@ -57,12 +57,12 @@ async function findOrCreateContact(msisdn) {
     try {
         /* 2 – create Presubscribed contact */
         const create = await axios.post(
-            `${OMNI_BASE}/contact`,
+            `${Wx_BASE}/contact`,
             {
                 mobileNumber: msisdn,
                 name: msisdn,
                 status: 'Presubscribed',
-                apiAccountId: OMNI_API_ACCOUNT_ID
+                apiAccountId: Wx_API_ACCOUNT_ID
             },
             { headers: { Authorization: `Bearer ${bearer}` } }
         );
@@ -80,7 +80,7 @@ async function sendWhatsApp(contactId, values = []) {
     const bearer = await getBearer();
   
     const { data: tpl } = await axios.get(
-      `${OMNI_BASE}/template/${OMNI_TEMPLATE_ID}`,
+      `${Wx_BASE}/template/${Wx_TEMPLATE_ID}`,
       { headers: { Authorization: `Bearer ${bearer}` } }
     );
 
@@ -92,11 +92,11 @@ async function sendWhatsApp(contactId, values = []) {
   
     /* 3️⃣  Send broadcast with the generated text  */
     const { data } = await axios.post(
-      `${OMNI_BASE}/broadcast`,
+      `${Wx_BASE}/broadcast`,
       {
-        apiAccountId: OMNI_API_ACCOUNT_ID,
+        apiAccountId: Wx_API_ACCOUNT_ID,
         contactId,
-        templateId : OMNI_TEMPLATE_ID,
+        templateId : Wx_TEMPLATE_ID,
         message    : finalMessage
       },
       { headers: { Authorization: `Bearer ${bearer}` } }
@@ -137,7 +137,7 @@ app.post(
             }
 
         } catch (err) {
-            console.error('OmniChat error', err.response?.data || err.message);
+            console.error('WxChat error', err.response?.data || err.message);
         }
     }
 );
